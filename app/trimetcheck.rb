@@ -20,7 +20,7 @@ $CONFIG = '../config'
 class TrimetTrack 
   attr_accessor :query_time_ms, :result, :display
   attr_writer :xml_data #for testing
-  attr_reader :mode
+  attr_reader :mode, :ids
 
   def initialize(mode, ids, my_app_id = '')
     @query_time_ms = nil
@@ -51,6 +51,8 @@ class TrimetTrack
     if @xml_data =='' || @xml_data == nil
       self.buildRequest
       @xml_data = Net::HTTP.get_response(URI.parse(@url)).body 
+    else
+      return @xml_data 
     end
   end
 
