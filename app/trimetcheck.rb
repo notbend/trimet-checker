@@ -56,7 +56,7 @@ class TrimetTrack
     end
   end
 
-  def status_report(status, stamp) # ...arriving in 3 minutes, ...scheduled at Tuesday, 4:45am
+  def statusReport(status, stamp) # ...arriving in 3 minutes, ...scheduled at Tuesday, 4:45am
     if status == 'scheduled'
       _d = DateTime.strptime(stamp,'%Q') #%Q = milliseconds since unix epoch
       _d = _d.to_time #localize before strftime. consider forcing this to PST
@@ -88,11 +88,11 @@ class TrimetTrack
       if @result.include? v['locid'] 
         route = @result[v['locid']]['routes']
         if route.include? v['route']
-           route[v['route']][0] += "\t#{self.status_report(v['status'], v['scheduled'])}\n" 
+           route[v['route']][0] += "\t#{self.statusReport(v['status'], v['scheduled'])}\n" 
         else
           route[v['route']] = Array.new 
           route[v['route']].push(v['fullSign'] + "\n" )
-          route[v['route']][0] +=  "\t#{self.status_report(v['status'], v['scheduled'])}\n" 
+          route[v['route']][0] +=  "\t#{self.statusReport(v['status'], v['scheduled'])}\n" 
           route[v['route']].push(v)
         end
       else
