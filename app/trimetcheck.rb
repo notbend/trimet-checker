@@ -19,10 +19,11 @@ $BASEURL= ''
 $CONFIG = '../config'
 class TrimetTrack 
   attr_accessor :query_time_ms, :result, :display
-  attr_writer :xml_data #for testing
+  #attr_writer :xml_data #for testing
   attr_reader :mode, :ids
 
   def initialize(mode, ids, my_app_id = '')
+    @xml_data = nil
     @query_time_ms = nil
     if my_app_id != '' 
       $APPID = my_app_id
@@ -46,11 +47,17 @@ class TrimetTrack
     @url = $BASEURL + @mode + '?locIDs=' + @ids.join(',') + '&appID=' + $APPID
   end
 
+  def xml_data=(xml)
+    @xml_data = xml
+  end
+
   def xml_data #HTTP Request, just the raw xml
     #try or failquery_time_ms
+    return @xml_data
     if @xml_data =='' || @xml_data == nil
       self.buildRequest
       @xml_data = Net::HTTP.get_response(URI.parse(@url)).body 
+      return @xml_data
     else
       return @xml_data 
     end
@@ -68,12 +75,12 @@ class TrimetTrack
       else # expecting "1 minute"
         arrival = arrival.to_s << " minute"
       end
-      return ("#{status}  arrival in  #{arrival}")
+      return ("#{status} arrival in #{arrival}")
     end
   end
 
   def parseXML #create a human readable text block
-    self.xml_data
+    @xml_data = self.xml_data
     data = XmlSimple.xml_in(@xml_data, { 'KeyAttr' => 'block' })
     @query_time_ms= data['queryTime'].to_i
     data['location'].each do |loc|
