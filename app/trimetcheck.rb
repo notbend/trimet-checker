@@ -53,7 +53,6 @@ class TrimetTrack
 
   def xml_data #HTTP Request, just the raw xml
     #try or failquery_time_ms
-    return @xml_data
     if @xml_data =='' || @xml_data == nil
       self.buildRequest
       @xml_data = Net::HTTP.get_response(URI.parse(@url)).body 
@@ -144,11 +143,7 @@ class TrimetTrack
   
 end
 
+#sample usage
 #track = TrimetTrack.new("arrivals", "6805, 7646, 7634")
-#track = TrimetTrack.new("arrivals", "7646, 7634")
-#url = track.buildRequest
+#track = TrimetTrack.new("arrivals", "6786")
 #puts track.niceDisplay
-#track.parseXML
-#puts track.display
-#puts url
-#track.readConfig
