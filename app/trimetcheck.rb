@@ -144,6 +144,7 @@ class TrimetTrack
 end
 
 #sample usage
-#track = TrimetTrack.new("arrivals", "6805, 7646, 7634")
-track = TrimetTrack.new("arrivals", "6786, 6784, 6802")
+#track = TrimetTrack.new("arrivals", "6805, 7646, 7634") #stops from different routes
+track = TrimetTrack.new("arrivals", "6786, 6784, 6802") #consecutive stops on the same route 
+puts track.buildRequest
 puts track.niceDisplay
