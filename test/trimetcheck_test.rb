@@ -62,6 +62,7 @@ class TrimetCheckTest < Test::Unit::TestCase
     msg ="is the epoch date a number and does it agree with the xml?"
     assert_equal(1365651602456, @tc_xml_1.query_time_ms, msg)
   end
+
   def test_status_report_scheduled
     # Trimet time values are in milliseconds since epoch
     # 13 digit value => 1000 * 60 * 60 * 24 * 365 * 43ish
@@ -71,17 +72,24 @@ class TrimetCheckTest < Test::Unit::TestCase
     # ------3600000 1 hour
     # -----86400000 1 day
     # --31536000000 1 year
-
-    assert_equal("scheduled  at  Wednesday, 08:40 pm", @tc0.statusReport("scheduled", @base_stamp.to_s), "a msg")
-    assert_equal("scheduled  at  Wednesday, 08:41 pm", @tc0.statusReport("scheduled",(@base_stamp + MIN).to_s), "a msg")
-    assert_equal("scheduled  at  Wednesday, 09:40 pm", @tc0.statusReport("scheduled",(@base_stamp + HOUR).to_s), "a msg")
-    assert_equal("scheduled  at  Wednesday, 10:10 pm", @tc0.statusReport("scheduled",(@base_stamp + HOUR + (30 * MIN)).to_s), "a msg")
-    assert_equal("scheduled  at  Thursday, 01:40 am",  @tc0.statusReport("scheduled",(@base_stamp + (5 * HOUR)).to_s), "a msg")
+    
+    msg = "Are scheduled dates correct?"
+    assert_equal("scheduled  at  Wednesday, 08:40 pm", @tc0.statusReport("scheduled", @base_stamp.to_s), msg)
+    assert_equal("scheduled  at  Wednesday, 08:41 pm", @tc0.statusReport("scheduled",(@base_stamp + MIN).to_s), msg)
+    assert_equal("scheduled  at  Wednesday, 09:40 pm", @tc0.statusReport("scheduled",(@base_stamp + HOUR).to_s), msg)
+    assert_equal("scheduled  at  Wednesday, 10:10 pm", @tc0.statusReport("scheduled",(@base_stamp + HOUR + (30 * MIN)).to_s), msg)
+    assert_equal("scheduled  at  Thursday, 01:40 am",  @tc0.statusReport("scheduled",(@base_stamp + (5 * HOUR)).to_s), msg)
   end
+
   def test_status_report_estimated
     #reasonable cases from 0 - 90 minutes, needs xml for the stamp data
-    assert_equal("estimated arrival in 0 minutes",  @tc_xml_1.statusReport("estimated", @base_stamp.to_s), "a msg")
-    assert_equal("estimated arrival in 1 minute",   @tc_xml_1.statusReport("estimated",(@base_stamp - MIN).to_s), "a msg")
-    assert_equal("estimated arrival in 10 minutes", @tc_xml_1.statusReport("estimated",(@base_stamp - (MIN * 10)).to_s), "a msg")
+    #DST Notes: 
+    #  began at 2:00 AM, 2013 March 10 (Sunday)
+    #  ends at 2:00 AM, 2013 November 3 (Sunday)
+    #TOD0: DST related tests?
+    msg = "Are estimated time differences correct?"
+    assert_equal("estimated arrival in 0 minutes",  @tc_xml_1.statusReport("estimated", @base_stamp.to_s), msg)
+    assert_equal("estimated arrival in 1 minute",   @tc_xml_1.statusReport("estimated",(@base_stamp - MIN).to_s), msg)
+    assert_equal("estimated arrival in 10 minutes", @tc_xml_1.statusReport("estimated",(@base_stamp - (MIN * 10)).to_s), msg)
   end
 end
