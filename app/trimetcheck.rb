@@ -145,5 +145,5 @@ end
 
 #sample usage
 #track = TrimetTrack.new("arrivals", "6805, 7646, 7634")
-#track = TrimetTrack.new("arrivals", "6786")
-#puts track.niceDisplay
+track = TrimetTrack.new("arrivals", "6786, 6784, 6802")
+puts track.niceDisplay
