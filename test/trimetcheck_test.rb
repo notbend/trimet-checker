@@ -2,45 +2,27 @@
 require File.join(File.dirname(__FILE__),'..','app','trimetcheck.rb')
 require 'test/unit'
 
+MIN = 60000
+HOUR = MIN * 60
+DAY = HOUR * 24
 class TrimetCheckTest < Test::Unit::TestCase
   def setup 
-    @min = 60000
-    @hour = @min * 60
-    @day = @hour * 24
     @base_stamp = 1365651602456 #Wednesday, 08:40 pm
     @app_id = "fake_id_not_from_the_config"
-    #tc0: are config values read? can they be overridden?
-    #tc1: are the ids being properly read and array'd?
-    @tc0 = TrimetTrack.new("arrivals", "1, 123")
-    @tc1 = TrimetTrack.new("arrivals", "1, 234,  5",@app_id)
-    
-    #tc2: are xml files being correctly parsed?
-    #xml dummy files are used in place of live data.
-    @tc2 = TrimetTrack.new("arrivals", "7646, 7634")
+    @tc0 = TrimetTrack.new("arrivals", "1, 234")
+    @tc_xml_1 = TrimetTrack.new("arrivals", "7646, 7634")
     file = File.open("xml/7646_7634_840_wed_arrivals.xml", "rb")
-    @tc2.xml_data = file.read
+    @tc_xml_1.xml_data = file.read
     file.close
-    @tc2.parseXML
-
-    #tc3: are timestamp values being correctly translated?
-    #
-    #tc4: are time diffs correct?
-      #@tdata = Array.new
-      ############# queryTime,      stopIDs,     routes,     arrivals, file
-      #@tdata[0] = ['1365651602456','7646,7634','190,200,4,33']
-
+    @tc_xml_1.parseXML
   end
+
   def test_initialize #(mode, ids, my_app_id = '') 
     msg = "Can we load an TrimetCheck object?"
     assert_equal('arrivals', @tc0.mode, msg)
     assert_equal('1', @tc0.ids[0], msg)
-    assert_equal('123', @tc0.ids[1],msg)
+    assert_equal('234', @tc0.ids[1],msg)
     assert_equal(2, @tc0.ids.length,msg)
-
-
-    #msg = "Can we run without a stop id?"
-    #_t0 = TrimetTrack.new("arrivals",'1')
-    #assert_equal(1, _t0.ids.length, msg)
 
     msg = "Can we read just one id?"
     _t1 = TrimetTrack.new("arrivals", "1")
@@ -65,25 +47,20 @@ class TrimetCheckTest < Test::Unit::TestCase
   end
 
   def test_build_request
-    msg = "Are urls well formed?"
-    assert_equal(3, @tc1.ids.length, msg)
-    assert_equal("http://developer.trimet.org/ws/V1/arrivals?locIDs=1,234,5&appID=#{@app_id}", @tc1.buildRequest)
-
-    #TODO: request url with default values
+    #msg = "Are urls well formed?"
+    #assert_equal("http://developer.trimet.org/ws/V1/arrivals?locIDs=1,234&appID=#{@app_id}", @tc0.buildRequest, msg)
   end
 
   def test_xml_parse
     #can external xml be loaded?
     xml = "<x>testing</x>"
-    t1 = TrimetTrack.new("arrivals", "7646, 7634", @app_id)
-    t1.xml_data= xml
-    #t1.parseXML #this should not overwrite the value 
-    assert_equal(xml, t1.xml_data)
+    @tc0.xml_data= xml
+    assert_equal(xml, @tc0.xml_data)
   end
 
   def test_epoch_to_date
     msg ="is the epoch date a number and does it agree with the xml?"
-    assert_equal(1365651602456, @tc2.query_time_ms, msg)
+    assert_equal(1365651602456, @tc_xml_1.query_time_ms, msg)
   end
   def test_status_report_scheduled
     # Trimet time values are in milliseconds since epoch
@@ -95,16 +72,16 @@ class TrimetCheckTest < Test::Unit::TestCase
     # -----86400000 1 day
     # --31536000000 1 year
 
-    assert_equal("scheduled  at  Wednesday, 08:40 pm", @tc2.statusReport("scheduled", @base_stamp.to_s), "a msg")
-    assert_equal("scheduled  at  Wednesday, 08:41 pm", @tc2.statusReport("scheduled",(@base_stamp + @min).to_s), "a msg")
-    assert_equal("scheduled  at  Wednesday, 09:40 pm", @tc2.statusReport("scheduled",(@base_stamp + @hour).to_s), "a msg")
-    assert_equal("scheduled  at  Wednesday, 10:10 pm", @tc2.statusReport("scheduled",(@base_stamp + @hour + (30 * @min)).to_s), "a msg")
-    assert_equal("scheduled  at  Thursday, 01:40 am",  @tc2.statusReport("scheduled",(@base_stamp + (5 * @hour)).to_s), "a msg")
+    assert_equal("scheduled  at  Wednesday, 08:40 pm", @tc0.statusReport("scheduled", @base_stamp.to_s), "a msg")
+    assert_equal("scheduled  at  Wednesday, 08:41 pm", @tc0.statusReport("scheduled",(@base_stamp + MIN).to_s), "a msg")
+    assert_equal("scheduled  at  Wednesday, 09:40 pm", @tc0.statusReport("scheduled",(@base_stamp + HOUR).to_s), "a msg")
+    assert_equal("scheduled  at  Wednesday, 10:10 pm", @tc0.statusReport("scheduled",(@base_stamp + HOUR + (30 * MIN)).to_s), "a msg")
+    assert_equal("scheduled  at  Thursday, 01:40 am",  @tc0.statusReport("scheduled",(@base_stamp + (5 * HOUR)).to_s), "a msg")
   end
   def test_status_report_estimated
-    #reasonable cases from 0 - 90 minutes
-    assert_equal("estimated arrival in 0 minutes",  @tc2.statusReport("estimated", @base_stamp.to_s), "a msg")
-    assert_equal("estimated arrival in 1 minute",   @tc2.statusReport("estimated",(@base_stamp - @min).to_s), "a msg")
-    assert_equal("estimated arrival in 10 minutes", @tc2.statusReport("estimated",(@base_stamp - (@min * 10)).to_s), "a msg")
+    #reasonable cases from 0 - 90 minutes, needs xml for the stamp data
+    assert_equal("estimated arrival in 0 minutes",  @tc_xml_1.statusReport("estimated", @base_stamp.to_s), "a msg")
+    assert_equal("estimated arrival in 1 minute",   @tc_xml_1.statusReport("estimated",(@base_stamp - MIN).to_s), "a msg")
+    assert_equal("estimated arrival in 10 minutes", @tc_xml_1.statusReport("estimated",(@base_stamp - (MIN * 10)).to_s), "a msg")
   end
 end
