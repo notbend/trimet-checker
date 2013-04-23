@@ -12,7 +12,7 @@ require 'date'
 require 'net/http'
 #require 'rubygems'
 require 'xmlsimple'
-#require 'pp'
+require 'pp'
 
 $APPID= ''
 $BASEURL= ''
@@ -30,21 +30,60 @@ class TrimetTrack
     end
     readConfig
     #mode used in query string
-    if ['arrivals','detours','routeconfig','stoplocation','tripplanner'].include? mode 
-      @mode = mode
-    else
-      @mode = 'arrivals'
-    end
     @ids = ids.delete(' ').split(',')
+    @url_opts = Hash.new()
+    @mode = mode
+    case mode 
+    when 'arrivals' 
+      @url_opts = { 'locIDs' => @ids}
+    when 'routeconfig', 'routeConfig' #,'detours','routeconfig','stoplocation','tripplanner'
+      @mode = 'routeConfig'
+      @url_opts = { 'route' => @ids,
+                    'dir'   => '0',
+                    'tp'    => 'true'
+                  }
+    else
+      @url_opts = { 'invalid' => 'option' }
+    end
     @result = Hash.new(@ids.length)
     @display = ''
     @ids.each do |key|
       @result[key] = nil
     end
   end
+  
+  def routeConfig(route) #eg: line 8 to OHSU. 
+    @mode = 'routeConfig'  
+    _xml  = Array.new(2)
+    _data = Array.new(2)
+    initialize(@mode, route)
+    for i in 0..1
+      @url_opts['dir'] = i.to_s
+      self.buildRequest
+      _xml[i] = Net::HTTP.get_response(URI.parse(@url)).body 
+      _data[i] = XmlSimple.xml_in(_xml[i], { 'KeyAttr' => 'seq', 'KeepRoot' => false})
+      _data[i] = _data[i]['route'].first['dir'].first['stop']
+    end
+    #pp _data[1]
+    #_data[i].each do |k,v|
+    #   puts "#{k} => #{v.to_s}"
+    #end
+    return _data
+  end
 
   def buildRequest #base url + mode + ids + appID 
-    @url = $BASEURL + @mode + '?locIDs=' + @ids.join(',') + '&appID=' + $APPID
+    #http://developer.trimet.org/ws/V1/routeConfig?route=75&dir=1&tp=true&appID=B0E5ECC078C9608F6781AE3E1
+    _sub_url = '?'
+    @url_opts.each do |k, v|
+      _sub_url << k << '='
+      if v.kind_of?(Array)
+        _sub_url << v.join(',')
+      else 
+        _sub_url << v 
+      end
+      _sub_url << '&'
+    end  
+    @url = $BASEURL + @mode + _sub_url + 'appID=' + $APPID
   end
 
   def xml_data=(xml)
@@ -145,6 +184,6 @@ end
 
 #sample usage
 #track = TrimetTrack.new("arrivals", "6805, 7646, 7634") #stops from different routes
-track = TrimetTrack.new("arrivals", "6786, 6784, 6802") #consecutive stops on the same route 
-puts track.buildRequest
-puts track.niceDisplay
+#track = TrimetTrack.new("arrivals", "6786, 6784, 6802") #consecutive stops on the same route 
+#puts track.buildRequest
+#puts track.niceDisplay
