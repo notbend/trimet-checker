@@ -71,6 +71,16 @@ class TrimetTrack
     return _data
   end
 
+  def getRouteSequence(max_ids, l1, l2= nil)
+    #get two location ids (l1, l2). if l2 is nil assume it is the last one on the route
+    #return an array of all location ids between those two points. 
+    #if location ids > max_ids, don't return more than max_ids 
+    #for example, if there are 20 ids from 1 to 20 and max_ids is 3, it should return 1,10, and 20
+    #
+    #it's possible, as with line 8, 2 points could fall between the end of an inbound route and the
+    #begining of an outbound route (or vice versa). for now, only the simple case of 2 points within
+    #either out or inbound are accounted for 
+  end
   def buildRequest #base url + mode + ids + appID 
     #http://developer.trimet.org/ws/V1/routeConfig?route=75&dir=1&tp=true&appID=B0E5ECC078C9608F6781AE3E1
     _sub_url = '?'
