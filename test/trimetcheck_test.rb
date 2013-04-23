@@ -9,7 +9,7 @@ class TrimetCheckTest < Test::Unit::TestCase
   def setup 
     @base_stamp = 1365651602456 #Wednesday, 08:40 pm
     @app_id = "fake_id_not_from_the_config"
-    @tc0 = TrimetTrack.new("arrivals", "1, 234")
+    @tc0 = TrimetTrack.new("arrivals", "1, 234", @app_id)
     @tc_xml_1 = TrimetTrack.new("arrivals", "7646, 7634")
     file = File.open("xml/7646_7634_840_wed_arrivals.xml", "rb")
     @tc_xml_1.xml_data = file.read
@@ -47,8 +47,10 @@ class TrimetCheckTest < Test::Unit::TestCase
   end
 
   def test_build_request
-    #msg = "Are urls well formed?"
-    #assert_equal("http://developer.trimet.org/ws/V1/arrivals?locIDs=1,234&appID=#{@app_id}", @tc0.buildRequest, msg)
+    msg = "Are urls well formed?"
+    assert_equal("http://developer.trimet.org/ws/V1/arrivals?locIDs=1,234&appID=#{@app_id}", @tc0.buildRequest, msg + ' arrivals')
+    _tc0 = TrimetTrack.new("routeconfig", "75", @app_id)
+    assert_equal("http://developer.trimet.org/ws/V1/routeConfig?route=75&dir=0&tp=true&appID=#{@app_id}", _tc0.buildRequest, msg + ' routeConfig')
   end
 
   def test_xml_parse
