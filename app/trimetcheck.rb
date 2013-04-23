@@ -80,7 +80,7 @@ class TrimetTrack
 
   def parseXML #create a human readable text block
     @xml_data = self.xml_data
-    data = XmlSimple.xml_in(@xml_data, { 'KeyAttr' => 'block' })
+    data = XmlSimple.xml_in(@xml_data, { 'ForceArray' => true })
     @query_time_ms= data['queryTime'].to_i
     data['location'].each do |loc|
       if @result.include? loc['locid']
@@ -90,7 +90,7 @@ class TrimetTrack
     end
     #trimet xml data for stop information and arrivals to the stop are not nested xml.
     #arrivals are set in a second loop to ensure they correspond to an already set stop location 
-    data['arrival'].each do |k,v|
+    data['arrival'].each do |v|
       if @result.include? v['locid'] 
         route = @result[v['locid']]['routes']
         if route.include? v['route']
