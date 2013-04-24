@@ -16,7 +16,6 @@ require 'pp'
 
 $APPID= ''
 $BASEURL= ''
-$CONFIG = '../config'
 class TrimetTrack 
   attr_accessor :query_time_ms, :result, :display
   #attr_writer :xml_data #for testing
@@ -36,7 +35,7 @@ class TrimetTrack
     case mode 
     when 'arrivals' 
       @url_opts = { 'locIDs' => @ids}
-    when 'routeconfig', 'routeConfig' #,'detours','routeconfig','stoplocation','tripplanner'
+    when 'getRouteSequence','routeconfig', 'routeConfig' #,'detours','routeconfig','stoplocation','tripplanner'
       @mode = 'routeConfig'
       @url_opts = { 'route' => @ids,
                     'dir'   => '0',
@@ -53,26 +52,37 @@ class TrimetTrack
   end
   
   def routeConfig(route) #eg: line 8 to OHSU. 
-    @mode = 'routeConfig'  
-    _xml  = Array.new(2)
-    _data = Array.new(2)
+    @mode  = 'routeConfig'  
+    _xml   = Array.new(2)
+    _data  = Array.new(2)
+    _routes= Array.new(2)
     initialize(@mode, route)
     for i in 0..1
       @url_opts['dir'] = i.to_s
       self.buildRequest
       _xml[i] = Net::HTTP.get_response(URI.parse(@url)).body 
       _data[i] = XmlSimple.xml_in(_xml[i], { 'KeyAttr' => 'seq', 'KeepRoot' => false})
-      _data[i] = _data[i]['route'].first['dir'].first['stop']
+      _routes[i] = Array.new()
+      _cur_seq = 0
+      _data[i]['route'].first['dir'].first['stop'].each do |v|
+        if v[0].to_i >= _cur_seq
+          _cur_seq = v[0].to_i
+          _routes[i] << v
+        else
+          _routes[i] << 'out of sequence?' #US
+        end 
+      end
     end
     #pp _data[1]
     #_data[i].each do |k,v|
     #   puts "#{k} => #{v.to_s}"
     #end
-    return _data
+    #return _data
+    return _routes
   end
 
-  def getRouteSequence(max_ids, l1, l2= nil)
-    #get two location ids (l1, l2). if l2 is nil assume it is the last one on the route
+  def getRouteSequence(route, max_ids, x1, x2= nil)
+    #get two location ids (x1, x2). if x2 is nil assume it is the last one on the route
     #return an array of all location ids between those two points. 
     #if location ids > max_ids, don't return more than max_ids 
     #for example, if there are 20 ids from 1 to 20 and max_ids is 3, it should return 1,10, and 20
@@ -80,6 +90,52 @@ class TrimetTrack
     #it's possible, as with line 8, 2 points could fall between the end of an inbound route and the
     #begining of an outbound route (or vice versa). for now, only the simple case of 2 points within
     #either out or inbound are accounted for 
+    _route_seq = Array.new()  #return x1 ... x2, with max_ids - 2 ids between
+    _indicies = {:s_dir => 0, #either 0 or 1, indicates if the Starting location is within the dir 0 or 1 route
+                 :e_dir => 0, #like s_dir, for the Ending location 
+                 :s_ind => 0, #0..n, the index that contains the Starting location
+                 :e_ind => 0} #like e_i
+    #possible _indicies:
+    # :s_dir = 0, :e_dir = 0, :s_1 = 7, :e_i = 9  (simple case 1)
+    #    start and end locations are both within the dir 0 route. there are 3 stops in the series
+    # :s_dir = 1, :e_dir = 1, :s_1 = 0, :e_i = 10 (simple case 2) 
+    #    start and end locations are both within the dir 1 route. there are 11 stops in the series
+    # :s_dir = 0, :e_dir = 1, :s_1 = 55, :e_i = 5 (must filter out duplicate locations?) see: route 8 to OHSU
+    #    start is in the dir 0 route while the end is in the dir 1 route
+    #    since there may be 0 or more stops on dir 1 after 55, there will be at least 7 stops in the series
+    r1, r2 = nil
+    route_dirs = routeConfig(route)
+    route_dirs.each_with_index do |rt, dir| #US: no check for a valid route
+      if x2 == nil #if x2 is nil, we can assume the entire series will NOT overlap dir 0 and 1 
+        r2 = rt[-1][1]['locid'] #location id from the last stop on the route 
+        _indicies[:e_dir] = dir
+        _indicies[:e_in]  = -1
+      end
+      rt.each_with_index do |v, ind| #US: assuming that all routes have a corresponding inbound/outbound version
+        vid = v[1]['locid']
+        if vid == x1
+          r1 = x1
+          _indicies[:s_dir] = dir
+          _indicies[:s_ind] = ind
+        elsif (vid == x2 or vid == r2) and r1 != nil
+          r2 = vid 
+          _indicies[:e_dir] = dir
+          _indicies[:e_ind] = ind
+        end
+        break if r1 != nil and r2 != nil
+      end
+      break if r1 != nil and r2 != nil
+    end
+    if _indicies[:s_dir] == _indicies[:e_dir]#simple cases 1 and 2
+      _route_seq = route_dirs[_indicies[:s_dir]][_indicies[:s_ind].._indicies[:e_ind]]
+    else #US assuming x1 is in dir 0 and x2 is in dir 1 
+      _route_seq = route_dirs[_indicies[:s_dir]].drop(_indicies[:s_ind])
+      _route_seq + route_dirs[_indicies[:e_dir]].take(_indicies[:e_ind])
+    end 
+    #if _route_seq.length > max_ids
+    #  _step = (_route_seq.length / max_ids).floor
+    #end
+    return _route_seq.map {|v| v[1]['locid']} #make array of just locids
   end
   def buildRequest #base url + mode + ids + appID 
     #http://developer.trimet.org/ws/V1/routeConfig?route=75&dir=1&tp=true&appID=B0E5ECC078C9608F6781AE3E1
@@ -179,7 +235,7 @@ class TrimetTrack
   def readConfig #text file options for developer key, base url
     # get vars from a config file if one exists
     line_num = 1 # 1 is appid, 2 is baseurl
-    File.readlines('../config').each do |line| 
+    File.readlines(File.expand_path("../../config", __FILE__)).each do |line| 
       line = line.gsub("\n",'')
       if line_num == 1 && $APPID ==''
         $APPID = line
@@ -194,6 +250,4 @@ end
 
 #sample usage
 #track = TrimetTrack.new("arrivals", "6805, 7646, 7634") #stops from different routes
-#track = TrimetTrack.new("arrivals", "6786, 6784, 6802") #consecutive stops on the same route 
-#puts track.buildRequest
 #puts track.niceDisplay
