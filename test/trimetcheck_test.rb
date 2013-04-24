@@ -94,4 +94,50 @@ class TrimetCheckTest < Test::Unit::TestCase
     assert_equal("estimated arrival in 1 minute",   @tc_xml_1.statusReport("estimated",(@base_stamp - MIN).to_s), msg)
     assert_equal("estimated arrival in 10 minutes", @tc_xml_1.statusReport("estimated",(@base_stamp - (MIN * 10)).to_s), msg)
   end
+
+  #line (route) 75 examples 
+  #dir=1
+  #"NE 41st & Klickitat" locid="7500" seq="3750" tp="false" lat="45.547046999998" lng="-122.62087299998"/> dir=1
+  #"SE Cesar Chavez Blvd & Stephens" locid="7490" seq="4750" tp="false" lat="45.5095671899025" lng="-122.622850361189"/> dir=1
+  #
+  #dir=0
+  #"N Lombard & Oatman" locid="3528" seq="5700" tp="false" lat="45.577199999998" lng="-122.70042099998"/>
+  #"N Lombard & Wabash" locid="3566" seq="5750" tp="false" lat="45.577211999998" lng="-122.703125"/>
+  #"N Lombard & Washburne" locid="3572" seq="5800" tp="false" lat="45.577216999998" lng="-122.70529299998"/>
+  #"N Lombard & Chautauqua" locid="3478" seq="5850" tp="false" lat="45.577214" lng="-122.707801"/>
+  #"N Lombard & Russet" locid="3548" seq="5900" tp="false" lat="45.5780735501307" lng="-122.71182645126"/>
+  #"N Lombard & Dwight" locid="3487" seq="5950" tp="false" lat="45.578962999998" lng="-122.71424799998"/>
+  #
+  #line (route) 8, an example with dir 0 and 1 overlaps
+  #locids that don't overlap*
+  #dir = 0
+  #*"SW 5th & Hall" locid="10491" seq="2150" tp="false" lat="45.5102484374056" lng="-122.682309139087"/>
+  #*"SW 5th & Broadway" locid="7588" seq="2200" tp="false" lat="45.5070794175557" lng="-122.683850353684"/>
+  #*"SW 6th & Sheridan" locid="7794" seq="2250" tp="false" lat="45.5053589218292" lng="-122.684451816893"/>
+  #*"SW Terwilliger & Sam Jackson" locid="5804" seq="2300" tp="false" lat="45.502537999998" lng="-122.68751599998"/>
+  #*"SW Terwilliger & Campus" locid="11010" seq="2350" tp="false" lat="45.4992493262091" lng="-122.682732956279"/>
+  #"SW US Veterans Rd & Bldg #16" locid="8455" seq="2400" tp="false" lat="45.4964183647869" lng="-122.682219978021"/>
+  # ... 9 overlapping stops ...
+  #"700 SW Campus Dr at Doernbecher" locid="10176" seq="2900" tp="false" lat="45.4978730883951" lng="-122.685901020567"/>
+  #"SW Campus Dr & Main Dental School" locid="868" seq="2950" tp="false" lat="45.498186999998" lng="-122.68430299998"/>
+  #"SW Campus Dr & Terwilliger" locid="870" seq="3000" tp="true" lat="45.49910455037" lng="-122.682572023037"/>
+  #
+  #dir = 1
+  #"SW US Veterans Rd & Bldg #16" locid="8455" seq="50" tp="true" lat="45.4964183647869" lng="-122.682219978021"/>
+  #"US Veterans Hospital" locid="5975" seq="100" tp="true" lat="45.4970583336085" lng="-122.683270682382"/>
+  # ... 9 overlapping stops...
+  #"SW Campus Dr & Main Dental School" locid="868" seq="600" tp="false" lat="45.498186999998" lng="-122.68430299998"/>
+  #"SW Campus Dr & Terwilliger" locid="870" seq="650" tp="false" lat="45.49910455037" lng="-122.682572023037"/>
+  #*"SW Terwilliger & Sam Jackson" locid="9861" seq="700" tp="false" lat="45.502742999998" lng="-122.68742299998"/>
+  #*"SW 6th & Sheridan" locid="7793" seq="750" tp="false" lat="45.5054336359249" lng="-122.684177436404"/>
+  #
+  #if we want a sequence of routes from SW 5th & Hall to SW Terwilliger & sam jackson we will cross from dir 0 to 1
+  #note: clearly this isn't a trip someone would make. the query would be for examining the OHSU bus loop
+  def test_get_route_sequence
+    msg = "Can we get a sequence of location IDs between two stops?"
+    _tc0 = TrimetTrack.new("routeconfig", "75") #, @app_id)
+   #assert_equal("hi!",  _tc0.getRouteSequence('8',10,'10491','8455'), msg + " with a default for x2")
+   #assert_equal("hi!",  _tc0.getRouteSequence('8',10,'10491','11010'), msg + " with a default for x2")
+   #assert_equal("hi!",  _tc0.getRouteSequence('8',10,'11010','7793'), msg + " with a default for x2")
+  end
 end
