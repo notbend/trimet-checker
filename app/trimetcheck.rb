@@ -29,7 +29,11 @@ class TrimetTrack
     end
     readConfig
     #mode used in query string
-    @ids = ids.delete(' ').split(',')
+    if ids.kind_of?(Array)
+      @ids = ids
+    elsif ids.kind_of?(String)
+      @ids = ids.delete(' ').split(',')
+    end
     @url_opts = Hash.new()
     @mode = mode
     case mode 
@@ -135,7 +139,8 @@ class TrimetTrack
     #if _route_seq.length > max_ids
     #  _step = (_route_seq.length / max_ids).floor
     #end
-    return _route_seq.map {|v| v[1]['locid']} #make array of just locids
+    route = _route_seq.map {|v| v[1]['locid']} #make array of just locids
+    return route.take(10)
   end
   def buildRequest #base url + mode + ids + appID 
     #http://developer.trimet.org/ws/V1/routeConfig?route=75&dir=1&tp=true&appID=B0E5ECC078C9608F6781AE3E1
