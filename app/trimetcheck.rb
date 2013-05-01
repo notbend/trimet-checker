@@ -142,6 +142,7 @@ class TrimetTrack
     route = _route_seq.map {|v| v[1]['locid']} #make array of just locids
     return route.take(10)
   end
+
   def buildRequest #base url + mode + ids + appID 
     #http://developer.trimet.org/ws/V1/routeConfig?route=75&dir=1&tp=true&appID=B0E5ECC078C9608F6781AE3E1
     _sub_url = '?'
@@ -203,13 +204,13 @@ class TrimetTrack
     data['arrival'].each do |v|
       if @result.include? v['locid'] 
         route = @result[v['locid']]['routes']
-        if route.include? v['route']
-           route[v['route']][0] += "\t#{self.statusReport(v['status'], v['scheduled'])}\n" 
-        else
+        if !route.include? v['route']
           route[v['route']] = Array.new 
           route[v['route']].push(v['fullSign'] + "\n" )
           route[v['route']][0] +=  "\t#{self.statusReport(v['status'], v['scheduled'])}\n" 
           route[v['route']].push(v)
+        else 
+          route[v['route']][0] +=  "\t#{self.statusReport(v['status'], v['scheduled'])}\n" 
         end
       else
         #error?
@@ -220,9 +221,9 @@ class TrimetTrack
   def filter_result route
     @result.each do |k, v| #locations
       v['routes'].each do |route_num, route_data|
-        if route_num != route 
+        if route_num != route
            @result[k]['routes'].delete(route_num) #.delete(route_num)
-        end  
+        end
       end
     end
   end 
@@ -263,5 +264,7 @@ class TrimetTrack
 end
 
 #sample usage
-#track = TrimetTrack.new("arrivals", "6805, 7646, 7634") #stops from different routes
+#track = TrimetTrack.new("arrivals", "6805") #stops from different routes
+#track.parseXML
+#track.filter_result '8'
 #puts track.niceDisplay
