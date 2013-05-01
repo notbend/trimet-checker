@@ -188,7 +188,7 @@ class TrimetTrack
     end
   end
 
-  def parseXML #create a human readable text block
+  def parseXML 
     @xml_data = self.xml_data
     data = XmlSimple.xml_in(@xml_data, { 'ForceArray' => true })
     @query_time_ms= data['queryTime'].to_i
@@ -217,18 +217,27 @@ class TrimetTrack
     end
   end
 
+  def filter_result route
+    @result.each do |k, v| #locations
+      v['routes'].each do |route_num, route_data|
+        if route_num != route 
+           @result[k]['routes'].delete(route_num) #.delete(route_num)
+        end  
+      end
+    end
+  end 
+
   def niceDisplay #human readable
     if @query_time_ms == nil#lazy way to ensure parseXML has happened
       self.parseXML
     end
-    if @display ==''
-      @result.each do |k,v|
-        @display << "Stop ID #{k}: #{v['desc']} \n"
-        #@display << "#{v['routes']}"
-        if (v['routes'])
-          v['routes'].each do |id,info|
-            @display << "#{info[0]} \n"
-          end
+    @display = ''
+    @result.each do |k,v|
+      @display << "Stop ID #{k}: #{v['desc']} \n"
+      #@display << "#{v['routes']}"
+      if (v['routes'])
+        v['routes'].each do |id,info|
+          @display << "#{info[0]} \n"
         end
       end
     end
