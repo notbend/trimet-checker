@@ -193,6 +193,7 @@ class TrimetTrack
     @xml_data = self.xml_data
     data = XmlSimple.xml_in(@xml_data, { 'ForceArray' => true })
     @query_time_ms= data['queryTime'].to_i
+    return @result = {'error' => data['errorMessage']}  if data.has_key? 'errorMessage'
     data['location'].each do |loc|
       if @result.include? loc['locid']
         @result[loc['locid']] = loc
@@ -205,12 +206,18 @@ class TrimetTrack
       if @result.include? v['locid'] 
         route = @result[v['locid']]['routes']
         if !route.include? v['route']
-          route[v['route']] = Array.new 
-          route[v['route']].push(v['fullSign'] + "\n" )
-          route[v['route']][0] +=  "\t#{self.statusReport(v['status'], v['scheduled'])}\n" 
-          route[v['route']].push(v)
+          route[v['route']] = Hash.new 
+          route[v['route']]['fullSign'] = v['fullSign']
+          route[v['route']]['arrivals'] = Array.new
+          route[v['route']]['arrivals'] << self.statusReport(v['status'], v['scheduled'])
+          route[v['route']]['detour'] = v['detour'] 
+          #route[v['route']]['more'] = v
+          if v.has_key? 'blockPosition' # gps for nearest bus
+            route[v['route']]['lat'] = v['blockPosition'][0]['lat']
+            route[v['route']]['lng'] = v['blockPosition'][0]['lng']
+          end
         else 
-          route[v['route']][0] +=  "\t#{self.statusReport(v['status'], v['scheduled'])}\n" 
+          route[v['route']]['arrivals'] << self.statusReport(v['status'], v['scheduled'])
         end
       else
         #error?
@@ -233,12 +240,15 @@ class TrimetTrack
       self.parseXML
     end
     @display = ''
+    return "Error: #{@result['error']}" if @result.has_key? 'error'
     @result.each do |k,v|
       @display << "Stop ID #{k}: #{v['desc']} \n"
       #@display << "#{v['routes']}"
       if (v['routes'])
         v['routes'].each do |id,info|
-          @display << "#{info[0]} \n"
+          #@display << "#{id} => #{info}" 
+          @display << "#{info['fullSign']}\n"
+          @display << "\t#{info['arrivals'].join("\n\t")}\n\n"
         end
       end
     end
@@ -264,7 +274,7 @@ class TrimetTrack
 end
 
 #sample usage
-#track = TrimetTrack.new("arrivals", "6805") #stops from different routes
-#track.parseXML
+track = TrimetTrack.new("arrivals", "6786") #stops from different routes
+track.parseXML
 #track.filter_result '8'
 #puts track.niceDisplay
