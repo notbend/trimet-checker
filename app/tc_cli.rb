@@ -1,28 +1,37 @@
+#!/usr/bin/env ruby
 require 'optparse'
 require_relative 'trimetcheck.rb'
 
 
 options = {}
+error   = ''
 
 opt_parser = OptionParser.new do |opt|
-  opt.banner = "Usage: ttt [-[OPTIONS]"
+  opt.banner = "Usage: trimet COMMAND [-[OPTIONS]"
   opt.separator  ""
-
-  opt.on("-s","--start LOCATION_ID(s)","bus or max stop id(s). if more than one, seperate by comma, eg: '1,2,3'") do |id|
-    options[:sids] = id 
-  end
-
-  opt.on("-e","--end LOCATION_ID","bus or max stop id. -l required. If given, many stops along the route will be given") do |id|
-    options[:eids] = id 
-  end
+  opt.separator  "Commands"
+  opt.separator  "  from [LOCATION_ID(s)]. Bus or MAX stop id(s). If more than one, seperate by comma"
+  opt.separator  "  to   [LOCATION_ID]. Destination Bus or MAX stop id. Returns arrivals at stops between from and to"
+  opt.separator  "       -l, --line is required with to"
+  opt.separator  ""
 
   opt.on("-l","--line ROUTE_ID","bus route number or MAX color (R,G,B,Y). Required with 'to' command ") do |id|
     options[:rids] = id 
   end
 
+  opt.on("-x","--xml","output xml") do
+    options[:xml] = true
+  end
+
   opt.on("-h","--help","help") do
     options[:help] = true
   end
+  opt.separator  ""
+  opt.separator  "Examples"
+  opt.separator  "  trimet from 718,818"
+  opt.separator  "  trimet from 718 to 818 --line 8"
+  opt.separator  "  trimet from 718 to 818 --line R"
+  opt.separator  "  trimet from 718 to 818 --line R -x"
 end
 
 opt_parser.parse!
@@ -36,18 +45,32 @@ commands.each do |c|
   end
 end
 
-puts options
+if options.length < 1 or options[:help] == true
+  puts opt_parser
+  exit
+end
 
 if options.has_key? 'from'
-  if options.has_key? 'to'
+  if options.has_key? 'to' and options.has_key? :rids
     track  = TrimetTrack.new("routeConfig", options[:rids])
     _stops = track.getRouteSequence(options[:rids], 10, options['from'],options['to'])
     track = TrimetTrack.new("arrivals", _stops)
   else 
     track = TrimetTrack.new("arrivals", options['from'])
-    puts track.niceDisplay
   end
   track.parseXML
-  track.filter_result(options[:rids]) if options.has_key? :rids
-  puts track.niceDisplay
+  if options.has_key? :rids
+    options[:rids].downcase!
+    options[:rids].gsub!('r','90')
+    options[:rids].gsub!('g','200')
+    options[:rids].gsub!('b','100')
+    options[:rids].gsub!('y','190')
+    track.filter_result(options[:rids])
+  end
+  if options.has_key? :xml 
+    puts track.xml_data
+  else
+    puts track.niceDisplay
+  end
 end
+
