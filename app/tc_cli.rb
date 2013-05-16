@@ -15,12 +15,17 @@ opt_parser = OptionParser.new do |opt|
   opt.separator  "       -l, --line is required with to"
   opt.separator  ""
 
-  opt.on("-l","--line ROUTE_ID","bus route number or MAX color (R,G,B,Y). Required with 'to' command ") do |id|
+  opt.on("-l","--line ROUTE_ID", String,
+         "bus route number or MAX color (R,G,B,Y). Required with 'to' command ") do |id|
     options[:rids] = id 
   end
 
-  opt.on("-x","--xml","output xml") do
+  opt.on("-x","--xml",TrueClass,"output xml") do
     options[:xml] = true
+  end
+
+  opt.on("-t", "--test XML_FILE", String, "Trimet xml for testing") do |xml_file|
+    options[:test_with] = xml_file
   end
 
   opt.on("-h","--help","help") do
@@ -58,7 +63,14 @@ if options.has_key? 'from'
   else 
     track = TrimetTrack.new("arrivals", options['from'])
   end
+
+  if options.has_key? :test_with
+    _file = File.open(options[:test_with], "rb")
+    track.xml_data = _file.read 
+    _file.close 
+  end
   track.parseXML
+
   if options.has_key? :rids
     options[:rids].downcase!
     options[:rids].gsub!('r','90')
@@ -67,6 +79,7 @@ if options.has_key? 'from'
     options[:rids].gsub!('y','190')
     track.filter_result(options[:rids])
   end
+
   if options.has_key? :xml 
     puts track.xml_data
   else
